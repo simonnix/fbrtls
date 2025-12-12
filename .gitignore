@@ -1,0 +1,4 @@
+bin/
+test_pki/
+fbrtls.yaml
+*.swp

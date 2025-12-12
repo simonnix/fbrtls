@@ -1,0 +1,82 @@
+
+[ ca ]
+default_ca = CA_Default
+
+[ CA_Default ]
+dir              =  ${ENV::CA_DIR}
+policy           =  ${ENV::CA_POLICY}
+crl_dir          =  $dir/crl
+new_certs_dir    =  $dir/newcerts
+database         =  $dir/index.txt
+serial           =  $dir/serial
+private_key      =  $dir/key.pem
+certificate      =  $dir/cacert.pem
+default_md       =  sha256
+preserve         =  no
+name_opt         =  ca_default
+cert_opt         =  ca_default
+copy_extensions  =  copyall
+
+[ policy_strict ]
+# The Root CA typically has strict policy requirements
+countryName             = match
+stateOrProvinceName     = match
+localityName            = optional
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ policy_intermediate ]
+# Intermediate CA policy is slightly less strict for commonName
+countryName             = supplied
+stateOrProvinceName     = supplied
+localityName            = optional
+organizationName        = supplied
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ req ]
+prompt = no
+distinguished_name = req_distinguished_name
+req_extensions      = req_ext
+
+[ req_ext ]
+
+[ req_distinguished_name ]
+countryName          =  ${ENV::REQ_COUNTRY}
+stateOrProvinceName  =  ${ENV::REQ_STATE}
+organizationName     =  ${ENV::REQ_ORGANIZATION}
+emailAddress         =  ${ENV::REQ_EMAIL}
+commonName           =  ${ENV::REQ_COMMON_NAME}
+
+[ req_server_ext ]
+subjectAltName          = ${ENV::REQ_SERVER_SANS}
+
+# Extensions for the Root CA certificate
+[ root_ca_cert ]
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints        = critical, CA:true
+keyUsage                = critical, digitalSignature, cRLSign, keyCertSign
+
+# Extensions when signing the Intermediate CA
+[ intermediate_ca_cert ]
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints        = critical, CA:true, pathlen:0  # pathlen:0 means it can only sign end-entity certs
+keyUsage                = critical, digitalSignature, cRLSign, keyCertSign
+crlDistributionPoints   = ${ENV::REQ_CRL_ENDPOINTS}
+authorityInfoAccess     = ${ENV::REQ_AUTHORITY_INFO_ACCESS}
+
+# Extensions for signing Web Server Certificates
+[ server_cert ]
+basicConstraints        = CA:FALSE
+keyUsage                = digitalSignature, keyEncipherment
+extendedKeyUsage        = serverAuth
+
+[ client_cert ]
+basicConstraints        = CA:FALSE
+keyUsage                = digitalSignature
+extendedKeyUsage        = clientAuth
