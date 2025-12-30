@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/gofiber/fiber/v3/client"
+	"github.com/valyala/fasthttp"
 )
 
 type ClientTLSConfigProvider interface {
@@ -21,17 +22,24 @@ type Client struct {
 
 func NewClient() *Client {
 	c := &Client{}
-	c.Client = client.New()
+	f := &fasthttp.Client{
+		MaxIdemponentCallAttempts: 1,
+	}
+	c.Client = client.NewWithClient(f)
 	return c
 }
 
 func (c *Client) SetTLSProvider(provider ClientTLSConfigProvider) *Client {
 	if provider != nil {
 		if cfg, err := provider.ProvideClientTLSConfig(); cfg != nil && err == nil {
-			c.Client.SetTLSConfig(cfg)
+			c.SetTLSConfig(cfg)
 		}
 	}
 	return c
+}
+
+func (c *Client) GetClient() *client.Client {
+	return c.Client
 }
 
 type ClientCertificateProvider struct {

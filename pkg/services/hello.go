@@ -42,9 +42,9 @@ func (main Hello) New(addr string, config fbr.ListenConfig) *Hello {
 	main.config = config
 
 	main.App = fbr.NewApp()
-	main.App.Use(logger.New())
+	main.Use(logger.New())
 
-	main.App.Get("/", func(c fiber.Ctx) error {
+	main.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("Hello World")
 	})
 

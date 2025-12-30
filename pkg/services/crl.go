@@ -41,9 +41,9 @@ func (crl Crl) New(addr string, config fbr.ListenConfig) *Crl {
 	crl.listen = addr
 	crl.config = config
 	crl.App = fbr.NewApp()
-	crl.App.Use(logger.New())
+	crl.Use(logger.New())
 
-	crl.App.Get("/crl.pem", func(c fiber.Ctx) error {
+	crl.Get("/crl.pem", func(c fiber.Ctx) error {
 		return c.SendString(crl.Crl)
 	})
 
@@ -53,6 +53,7 @@ func (crl Crl) New(addr string, config fbr.ListenConfig) *Crl {
 // Run implements Service.
 func (crl *Crl) Run(wg *sync.WaitGroup) {
 	wg.Go(func() {
+		//nolint:errcheck
 		crl.Listen(crl.listen, crl.config)
 	})
 	time.Sleep(200 * time.Millisecond)

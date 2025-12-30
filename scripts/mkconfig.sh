@@ -32,6 +32,8 @@ cat <<- EOL
 	    port: 3000
 	  crl:
 	    port: 3001
+	  ocsp:
+	    port: 3002
 	tls:
 	  path:
 	    root: ${ROOT_CA_CERT}

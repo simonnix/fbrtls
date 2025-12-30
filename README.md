@@ -25,6 +25,8 @@ Call `make` to create the PKI certificates and revocation list, config file and 
 make
 ```
 
+### Using a Certificate Revocation List
+
 Run the server from a term
 
 1. Run the server from a term :
@@ -45,7 +47,7 @@ Run the server from a term
 ./cmd/fbrtls client --revoked
 ```
 
-### Add the path flags
+#### Add the path flags
 
 Certificates are read from a config file, paths can be used too. Thoses are read from the same config file.
 
@@ -72,6 +74,25 @@ To test the path instead of string value, add the `--path` parameter to both the
 ./cmd/fbrtls client --path --revoked
 ```
 
+### Using an OCSP Responder
+
+1. Run the server from a term :
+```bash
+# TERM A
+./cmd/fbrtls server --auth --ocsp
+```
+
+2. Run the client from a valid certificate in the server Certificate Revocation List (another terminal):
+```bash
+# TERM B
+./cmd/fbrtls client
+```
+
+3. Run the client from a revoked certificate in the server Certificate Revocation List (another terminal):
+```bash
+# TERM B
+./cmd/fbrtls client --revoked
+```
 
 ## Test PKI
 

@@ -59,6 +59,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default to first find in $HOME/fbrtls.yaml, $PWD/fbrtls.yaml and $PWD/config/fbrtls.yaml)")
 	rootCmd.PersistentFlags().Bool("path", false, "Read TLS parameters from 'tls.path' in config file instead of 'tls.value'")
 	rootCmd.PersistentFlags().Int("port", 3000, "Port to run the server on")
+	//nolint:errcheck
 	viper.BindPFlag("services.hello.port", rootCmd.PersistentFlags().Lookup("port"))
 }
 

@@ -22,17 +22,20 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"log"
 	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/simonnix/fbrtls/pkg/fbr"
+	"github.com/simonnix/fbrtls/pkg/fbr/verifypeer"
 	"github.com/simonnix/fbrtls/pkg/services"
 )
 
 var enableClientAuth bool
 var enableClientAuthCrl bool
+var enableClientAuthOCSP bool
 var enableClientAuthCrlFetch bool
 
 // serverCmd represents the server command
@@ -62,15 +65,19 @@ The server can be configured with mTLS (--auth), CRL checking (--crl) and CRL fe
 
 		if enableClientAuth {
 			cert := cfg.Intermediate
-			if !enableClientAuthCrl {
-				tlsProvider.Customizer = &fbr.MTLSServerCertificateCustomizer{
-					ClientCertificate: cert,
-				}
-			} else {
-				tlsProvider.Customizer = &fbr.MTLSWithCRLServerCertificateCustomizer{
+			if enableClientAuthCrl {
+				tlsProvider.Customizer = &verifypeer.MTLSWithCRLServerCertificateCustomizer{
 					ClientCertificate:   cert,
 					RevocationList:      cfg.Crl,
 					FetchRevocationList: enableClientAuthCrlFetch,
+				}
+			} else if enableClientAuthOCSP {
+				tlsProvider.Customizer = &verifypeer.MTLSWithOSCPServerCertificateCustomizer{
+					ClientCertificate: cert,
+				}
+			} else {
+				tlsProvider.Customizer = &fbr.MTLSServerCertificateCustomizer{
+					ClientCertificate: cert,
 				}
 			}
 		}
@@ -78,6 +85,22 @@ The server can be configured with mTLS (--auth), CRL checking (--crl) and CRL fe
 
 		if enableClientAuthCrl && enableClientAuthCrlFetch {
 			s = append(s, services.Crl{Crl: cfg.Crl}.New(":"+viper.GetString("services.crl.port"), fbr.DefaultListenConfig()))
+		} else if enableClientAuthOCSP {
+			o, err := services.OCSPResponder{}.New(
+				":"+viper.GetString("services.ocsp.port"),
+				&services.OCSPConfig{
+					ListenConfig: fbr.DefaultListenConfig(),
+					IndexFile:    "test_pki/certs/intermediate/index.txt",
+					CaCertFile:   "test_pki/certs/intermediate/cacert.pem",
+					RespKeyFile:  "test_pki/certs/intermediate/certs/server/key.pem",
+					RespCertFile: "test_pki/certs/intermediate/certs/server/cert.pem",
+					Strict:       true,
+				},
+			)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+			s = append(s, o)
 		}
 
 		main := services.Hello{}.New(":"+viper.GetString("services.hello.port"), mainCfg)
@@ -96,5 +119,7 @@ func init() {
 
 	serverCmd.Flags().BoolVar(&enableClientAuth, "auth", false, "Enable mTLS authentication")
 	serverCmd.Flags().BoolVar(&enableClientAuthCrl, "crl", false, "Enable CRL checking. Require '--auth'.")
+	serverCmd.Flags().BoolVar(&enableClientAuthOCSP, "ocsp", false, "Enable OCSP checking. Require '--auth'.")
 	serverCmd.Flags().BoolVar(&enableClientAuthCrlFetch, "fetch", false, "Enable CRL fetching. Require '--auth' and '--crl'")
+	serverCmd.MarkFlagsMutuallyExclusive("crl", "ocsp")
 }
